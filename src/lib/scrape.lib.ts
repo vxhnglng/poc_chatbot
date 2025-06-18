@@ -5,21 +5,65 @@ import {
   IArticle,
   IArticleExportResponse,
   IArticleResponse,
+  IPagination,
   IScrapeConfig,
 } from "../interface";
 import TurndownService from "turndown";
+import { LoggerLib } from "./logger.lib";
+import { RedisLib } from "./redis.lib";
 
 export namespace ScrapeLib {
+  const redis = RedisLib.getRedis();
+
+  const createLogScrape = () => {
+    let totalScraped = 0;
+    let totalAdded = 0;
+    let totalUpdated = 0;
+    const promises: Promise<any>[] = [];
+    const buildMessage = (pagination: IPagination) => {
+      const added = totalAdded;
+      const updated = totalUpdated;
+      const skipped = pagination.count - (added + updated);
+      return `add: ${added} | updated: ${updated} | skipped: ${skipped}`;
+    };
+
+    return {
+      scrape: (id: number) => {
+        totalScraped += 1;
+        promises.push(
+          new Promise(async (resolve) => {
+            const rs = await redis.incr(`scrape:articles:${id}`);
+            const isAdded = rs === 1;
+            if (isAdded) {
+              totalAdded += 1;
+              resolve(true);
+              return;
+            }
+
+            totalUpdated += 1;
+            resolve(true);
+          })
+        );
+      },
+      log: async (pagination: IPagination) => {
+        await Promise.all(promises);
+        LoggerLib.log(buildMessage(pagination));
+      },
+    };
+  };
+
   export const getArticles = async (
     config: IScrapeConfig
   ): Promise<{
     config: IScrapeConfig;
     articles: IArticle[];
   }> => {
+    const logger = createLogScrape();
     const articles: IArticle[] = [];
     let newLatestUpdateTime = config.latestUpdateTime;
     let newLatestPage = config.latestPage;
-    let url = `https://support.optisigns.com/api/v2/help_center/en-us/articles.json?per_page=100&sort_order=desc&sort_by=updated_at&page=${config.latestPage}`;
+    let pagination: IPagination | undefined;
+    let url = `https://support.optisigns.com/api/v2/help_center/en-us/articles.json?per_page=100&sort_order=asc&sort_by=updated_at&page=${config.latestPage}`;
 
     // 100 attempts
     for (
@@ -28,6 +72,7 @@ export namespace ScrapeLib {
       attempt++
     ) {
       const { data } = await axios.get<IArticleResponse>(url);
+      pagination = data;
       newLatestPage = data.page;
 
       for (
@@ -40,16 +85,9 @@ export namespace ScrapeLib {
           dayjs(config.latestUpdateTime)
         );
 
-        if (!isNewArticle) {
-          return {
-            articles,
-            config: {
-              latestPage: newLatestPage,
-              latestUpdateTime: newLatestUpdateTime,
-            },
-          };
-        }
+        if (!isNewArticle) continue;
 
+        logger.scrape(article.id);
         articles.push(article);
         newLatestUpdateTime = Math.max(
           newLatestUpdateTime,
@@ -58,6 +96,7 @@ export namespace ScrapeLib {
       }
 
       if (!data.next_page) {
+        logger.log(pagination);
         return {
           articles,
           config: {
@@ -68,6 +107,10 @@ export namespace ScrapeLib {
       }
 
       url = data.next_page;
+    }
+
+    if (pagination) {
+      logger.log(pagination);
     }
 
     return {
