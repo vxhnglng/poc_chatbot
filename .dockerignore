@@ -1,8 +1,9 @@
+dist
+docker
 node_modules
 out/md/*
 persist/*
 
-.env
-docker-compose.yml
-Dockerfile
+.env*
+docker-compose*.yml
 README.md

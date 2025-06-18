@@ -8,50 +8,6 @@ services:
     volumes:
       - ./persist/chromadb:/data
 
-  scrape:
-    image: optisign_poc:v1
-    hostname: scrape.ots.com
-    build:
-      context: .
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    command: npx nodemon src/scrape.ts
-    env_file:
-      - .env.scrape
-    volumes:
-      - ./out:/app/out
-      - ./persist/chroma.db:/app/persist/chroma.db
-      #
-      - ./node_modules:/app/node_modules
-      - ./src:/app/src
-      - ./nodemon.json:/app/nodemon.json
-      - ./package-lock.json:/app/package-lock.json
-      - ./package.json:/app/package.json
-      - ./tsconfig.json:/app/tsconfig.json
-
-  api:
-    image: optisign_poc:v1
-    hostname: api.ots.com
-    build:
-      context: .
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    ports:
-      - "8135:3000"
-    command: npx nodemon src/app.ts
-    env_file:
-      - .env.api
-    volumes:
-      - ./out:/app/out
-      - ./persist/chroma.db:/app/persist/chroma.db
-      #
-      - ./node_modules:/app/node_modules
-      - ./src:/app/src
-      - ./nodemon.json:/app/nodemon.json
-      - ./package-lock.json:/app/package-lock.json
-      - ./package.json:/app/package.json
-      - ./tsconfig.json:/app/tsconfig.json
-
   redis:
     image: bitnami/redis:8.0.2
     hostname: redis.ots.com
@@ -62,3 +18,34 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
     volumes:
       - ./persist/redis:/bitnami/redis/data
+
+  scrape:
+    image: optisign_poc:v1_prod
+    hostname: scrape.ots.com
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.prod
+    restart: unless-stopped
+    command: node dist/scrape.js
+    env_file:
+      - .env.scrape
+    volumes:
+      - ./out:/app/out
+    depends_on:
+      - redis
+      - chromadb
+
+  api:
+    image: optisign_poc:v1_prod
+    hostname: api.ots.com
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.prod
+    restart: unless-stopped
+    ports:
+      - "8135:3000"
+    command: node dist/app.js
+    env_file:
+      - .env.api
+    depends_on:
+      - chromadb
