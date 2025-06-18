@@ -1,14 +1,19 @@
-import fs, { writeFile } from "fs";
+import fs from "fs";
 import axios from "axios";
 import dayjs from "dayjs";
-import { IArticle, IArticleResponse, IConfig } from "./interface";
+import {
+  IArticle,
+  IArticleExportResponse,
+  IArticleResponse,
+  IScrapeConfig,
+} from "../interface";
 import TurndownService from "turndown";
 
-export namespace Lib {
+export namespace LibArticle {
   export const getArticles = async (
-    config: IConfig
+    config: IScrapeConfig
   ): Promise<{
-    config: IConfig;
+    config: IScrapeConfig;
     articles: IArticle[];
   }> => {
     const articles: IArticle[] = [];
@@ -70,56 +75,45 @@ export namespace Lib {
     };
   };
 
-  export const loadConfig = async (): Promise<IConfig> => {
-    return new Promise((resolve) => {
-      fs.readFile("./out/config.json", "utf8", (err, data) => {
-        if (err) {
-          console.error(err);
-          resolve({ latestUpdateTime: 0, latestPage: 1 });
-          return;
-        }
-
-        const config: IConfig = JSON.parse(data);
-        resolve(config);
-      });
-    });
-  };
-
-  export const saveConfig = async (config: IConfig): Promise<boolean> => {
+  export const exportArticle = async (
+    article: IArticle
+  ): Promise<IArticleExportResponse> => {
+    const regex = new RegExp(`^.+/articles/${article.id}-`);
+    const slug = article.html_url.replace(regex, "");
+    const fileName = `./out/md/${slug}.md`;
+    const turndownService = new TurndownService();
+    turndownService.turndown(article.body);
     return new Promise((resolve) => {
       fs.writeFile(
-        "./out/config.json",
-        JSON.stringify(config, null, 2),
+        fileName,
+        turndownService.turndown(article.body),
         "utf8",
         (err) => {
           if (err) {
-            console.error(err);
-            resolve(false);
+            console.error(`Error writing file ${fileName}:`, err);
+            resolve({
+              success: false,
+              article: {
+                id: article.id,
+                name: article.name,
+                url: article.html_url,
+                path: fileName,
+              },
+            });
             return;
           }
 
-          console.log(`Config saved successfully:`, config);
-          resolve(true);
+          resolve({
+            success: true,
+            article: {
+              id: article.id,
+              name: article.name,
+              url: article.html_url,
+              path: fileName,
+            },
+          });
         }
       );
     });
-  };
-
-  export const exportArticle = async (article: IArticle) => {
-    const fileName = `./out/md/${article.id}.md`;
-    const turndownService = new TurndownService();
-    turndownService.turndown(article.body);
-    writeFile(
-      fileName,
-      turndownService.turndown(article.body),
-      "utf8",
-      (err) => {
-        if (err) {
-          console.error(`Error writing file ${fileName}:`, err);
-          return;
-        }
-        console.log(`Article ${article.id} exported to ${fileName}`);
-      }
-    );
   };
 }

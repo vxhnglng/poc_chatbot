@@ -41,7 +41,22 @@ export interface IArticleResponse extends IPagination {
   articles: IArticle[];
 }
 
-export interface IConfig {
+export interface IScrapeConfig {
   latestUpdateTime: number;
   latestPage: number;
+}
+
+export interface IArticleExportResponse {
+  success: boolean;
+  article: {
+    id: number;
+    name: string;
+    url: string;
+    path: string;
+  };
+}
+
+export interface IVectorStoreInput {
+  id: string;
+  content: string;
 }
