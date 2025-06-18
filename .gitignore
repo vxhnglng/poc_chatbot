@@ -1,7 +1,6 @@
 node_modules
 out/md/*
-
-out/chroma.db
 out/config.json
+persist/*
 
-.env
+.env*

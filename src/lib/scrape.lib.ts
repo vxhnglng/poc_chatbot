@@ -22,7 +22,11 @@ export namespace LibArticle {
     let url = `https://support.optisigns.com/api/v2/help_center/en-us/articles.json?per_page=100&sort_order=desc&sort_by=updated_at&page=${config.latestPage}`;
 
     // 100 attempts
-    for (let i = 0; i < 100; i++) {
+    for (
+      let attempt = 0, max_attempts = 100;
+      attempt < max_attempts;
+      attempt++
+    ) {
       const { data } = await axios.get<IArticleResponse>(url);
       newLatestPage = data.page;
 
