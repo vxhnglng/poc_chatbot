@@ -3,5 +3,6 @@ node_modules
 out/md/*
 out/config.json
 persist/*
+!persist/.gitkeep
 
 .env*
