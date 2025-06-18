@@ -1,20 +1,21 @@
 import { ChromaClient, Collection } from "chromadb";
 import { GoogleGenAI, Part } from "@google/genai";
 import { IVectorStoreInput } from "../interface";
+import { ConfigLib } from "../lib";
 
 export class VectorStore {
   private static _instance: VectorStore;
   private readonly embeddingModel = "models/embedding-001";
   private readonly collectionName = "articles";
   private readonly chromaClient = new ChromaClient({
-    path: "./persist/chroma.db",
+    path: ConfigLib.get().chromadb.url,
   });
   private genAI!: GoogleGenAI;
   private collection!: Collection;
 
   private constructor() {}
 
-  get instance(): VectorStore {
+  static get instance(): VectorStore {
     if (!VectorStore._instance) {
       VectorStore._instance = new VectorStore();
     }
@@ -26,6 +27,23 @@ export class VectorStore {
       this.genAI = new GoogleGenAI({ apiKey });
       this.collection = await this.chromaClient.getOrCreateCollection({
         name: this.collectionName,
+        embeddingFunction: {
+          generate: async (texts: string[]) => {
+            const parts: Part[] = texts.map((text) => ({ text }));
+            const result = await this.genAI.models.embedContent({
+              contents: parts,
+              model: this.embeddingModel,
+            });
+
+            if (result.embeddings) {
+              return Array.from(result.embeddings.values()).map(
+                (embedding) => embedding.values || []
+              );
+            }
+
+            return [];
+          },
+        },
       });
 
       return true;
@@ -45,27 +63,9 @@ export class VectorStore {
       const documents = inputs.map((input) => input.content);
       const ids = inputs.map((input) => input.id);
       const metadatas = inputs.map((input) => ({ source: input.id }));
-      const parts: Part[] = documents.map((document) => ({ text: document }));
-      const result = await this.genAI.models.embedContent({
-        contents: parts,
-        model: this.embeddingModel,
-      });
-
-      if (!result.embeddings) {
-        throw new Error("No embeddings returned from the model.");
-      }
-
-      if (result.embeddings.length !== documents.length) {
-        throw new Error(
-          "Mismatch between number of documents and embeddings generated."
-        );
-      }
 
       await this.collection.add({
         documents: documents,
-        embeddings: Array.from(result.embeddings.values()).map(
-          (embedding) => embedding.values || []
-        ),
         metadatas: metadatas,
         ids: ids,
       });

@@ -1,6 +1,13 @@
 version: "3.8"
 
 services:
+  chromadb:
+    image: chromadb/chroma:1.0.13.dev120
+    hostname: chromadb.ots.com
+    restart: unless-stopped
+    volumes:
+      - ./persist/chromadb:/data
+
   scrape:
     image: optisign_poc:v1
     hostname: scrape.ots.com

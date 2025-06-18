@@ -9,7 +9,7 @@ import {
 } from "../interface";
 import TurndownService from "turndown";
 
-export namespace LibArticle {
+export namespace ScrapeLib {
   export const getArticles = async (
     config: IScrapeConfig
   ): Promise<{

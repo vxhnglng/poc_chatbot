@@ -11,8 +11,14 @@ export namespace ConfigLib {
           : undefined,
         password: process.env.REDIS_PASS,
       },
+      gen_ai: {
+        api_key: String(process.env.GEN_AI_API_KEY),
+      },
       scrape: {
         interval: process.env.SCRAPE_INTERVAL || "",
+      },
+      chromadb: {
+        url: String(process.env.CHROMADB_URL),
       },
     };
   };
