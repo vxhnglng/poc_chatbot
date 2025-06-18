@@ -1,15 +1,13 @@
 import { ChromaClient, Collection } from "chromadb";
 import { GoogleGenAI, Part } from "@google/genai";
 import { IVectorStoreInput } from "../interface";
-import { ConfigLib } from "../lib";
+import { Config } from "../config";
 
 export class VectorStore {
   private static _instance: VectorStore;
   private readonly embeddingModel = "models/embedding-001";
   private readonly collectionName = "articles";
-  private readonly chromaClient = new ChromaClient({
-    path: ConfigLib.get().chromadb.url,
-  });
+  private readonly chromaClient = new ChromaClient(Config.get().chromadb);
   private genAI!: GoogleGenAI;
   private collection!: Collection;
 
@@ -76,5 +74,24 @@ export class VectorStore {
     }
 
     return false;
+  }
+
+  async query(query: string) {
+    try {
+      if (!this.collection) {
+        throw new Error("Collection is not initialized. Call init() first.");
+      }
+
+      const result = await this.collection.query({
+        queryTexts: [query],
+        nResults: 3,
+      });
+
+      return result;
+    } catch (error) {
+      console.error("Error embedding and storing content:", error);
+    }
+
+    return;
   }
 }

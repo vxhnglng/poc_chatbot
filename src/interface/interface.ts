@@ -50,9 +50,10 @@ export interface IArticleExportResponse {
   success: boolean;
   article: {
     id: number;
-    name: string;
+    slug: string;
     url: string;
     path: string;
+    content: string;
   };
 }
 

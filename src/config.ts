@@ -1,8 +1,8 @@
-export namespace ConfigLib {
+export namespace Config {
   export const get = () => {
     return {
       app: {
-        port: Number(process.env.PORT) || 3000,
+        port: Number(process.env.APP_PORT) || 3000,
       },
       redis: {
         host: process.env.REDIS_HOST,
@@ -18,7 +18,11 @@ export namespace ConfigLib {
         interval: process.env.SCRAPE_INTERVAL || "",
       },
       chromadb: {
-        url: String(process.env.CHROMADB_URL),
+        host: String(process.env.CHROMADB_HOST),
+        port: process.env.CHROMADB_PORT
+          ? Number(process.env.CHROMADB_PORT)
+          : undefined,
+        ssl: process.env.CHROMADB_SSL === "true",
       },
     };
   };

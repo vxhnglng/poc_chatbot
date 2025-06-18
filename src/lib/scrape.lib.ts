@@ -86,38 +86,35 @@ export namespace ScrapeLib {
     const slug = article.html_url.replace(regex, "");
     const fileName = `./out/md/${slug}.md`;
     const turndownService = new TurndownService();
-    turndownService.turndown(article.body);
+    const content = turndownService.turndown(article.body);
     return new Promise((resolve) => {
-      fs.writeFile(
-        fileName,
-        turndownService.turndown(article.body),
-        "utf8",
-        (err) => {
-          if (err) {
-            console.error(`Error writing file ${fileName}:`, err);
-            resolve({
-              success: false,
-              article: {
-                id: article.id,
-                name: article.name,
-                url: article.html_url,
-                path: fileName,
-              },
-            });
-            return;
-          }
-
+      fs.writeFile(fileName, content, "utf8", (err) => {
+        if (err) {
+          console.error(`Error writing file ${fileName}:`, err);
           resolve({
-            success: true,
+            success: false,
             article: {
               id: article.id,
-              name: article.name,
+              slug,
               url: article.html_url,
               path: fileName,
+              content,
             },
           });
+          return;
         }
-      );
+
+        resolve({
+          success: true,
+          article: {
+            id: article.id,
+            slug,
+            url: article.html_url,
+            path: fileName,
+            content,
+          },
+        });
+      });
     });
   };
 }

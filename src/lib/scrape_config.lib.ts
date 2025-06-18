@@ -1,9 +1,8 @@
 import { IScrapeConfig } from "../interface";
-import Redis from "ioredis";
-import { ConfigLib } from "./config.lib";
+import { RedisLib } from "./redis.lib";
 
 export namespace ScrapeConfigLib {
-  const redis = new Redis(ConfigLib.get().redis);
+  const redis = RedisLib.getRedis();
 
   export const loadConfig = async (): Promise<IScrapeConfig> => {
     try {

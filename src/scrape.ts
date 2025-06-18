@@ -1,7 +1,10 @@
 import nodeCron from "node-cron";
-import { ConfigLib, ScrapeLib, ScrapeConfigLib } from "./lib";
+import { ScrapeLib, ScrapeConfigLib } from "./lib";
 import dayjs from "dayjs";
 import { VectorStore } from "./store";
+import { IArticle, IArticleExportResponse } from "./interface";
+import { Config } from "./config";
+import _ from "lodash";
 
 const scrapeArticles = async () => {
   const now = dayjs().format("YYYY-MM-DD HH:mm:ss");
@@ -17,19 +20,36 @@ const scrapeArticles = async () => {
   return rs;
 };
 
+const exportArticles = async (articles: IArticle[]) => {
+  return await Promise.all(
+    articles.map((article) => ScrapeLib.exportArticle(article))
+  );
+};
+
+const embedAndStoreArticles = async (articles: IArticleExportResponse[]) => {
+  const hasArticles = !!articles[0];
+  if (!hasArticles) return;
+
+  for (const articleChunk of _.chunk(articles, 100)) {
+    const embedResult = await VectorStore.instance.embedAndStore(
+      articleChunk.map(({ article }) => {
+        return {
+          id: article.slug,
+          content: article.content,
+        };
+      })
+    );
+
+    console.log("Embedding and storing articles:", embedResult);
+  }
+};
+
 const bootstrap = async () => {
-  await VectorStore.instance.init(ConfigLib.get().gen_ai.api_key);
-  nodeCron.schedule(ConfigLib.get().scrape.interval, async () => {
-    const rs = await scrapeArticles();
-    for (
-      let articleIdx = 0, totalArticles = rs.articles.length;
-      articleIdx < totalArticles;
-      articleIdx++
-    ) {
-      const article = rs.articles[articleIdx];
-      ScrapeLib.exportArticle(article);
-      if (articleIdx >= 10) return;
-    }
+  await VectorStore.instance.init(Config.get().gen_ai.api_key);
+  nodeCron.schedule(Config.get().scrape.interval, async () => {
+    const resultScrape = await scrapeArticles();
+    const resultExport = await exportArticles(resultScrape.articles);
+    await embedAndStoreArticles(resultExport);
   });
 };
 
