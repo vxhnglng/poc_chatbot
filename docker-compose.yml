@@ -54,6 +54,8 @@ services:
     image: bitnami/redis:8.0.2
     hostname: redis.ots.com
     restart: unless-stopped
+    ports:
+      - "6400:6379"
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
     volumes:
