@@ -8,12 +8,23 @@ services:
     volumes:
       - ./persist/chromadb:/data
 
+  redis:
+    image: bitnami/redis:8.0.2
+    hostname: redis.ots.com
+    restart: unless-stopped
+    ports:
+      - "6400:6379"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - ./persist/redis:/bitnami/redis/data
+
   scrape:
     image: optisign_poc:v1
     hostname: scrape.ots.com
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: docker/Dockerfile
     restart: unless-stopped
     command: npx nodemon src/scrape.ts
     env_file:
@@ -25,13 +36,16 @@ services:
       - ./package-lock.json:/app/package-lock.json
       - ./package.json:/app/package.json
       - ./tsconfig.json:/app/tsconfig.json
+    depends_on:
+      - chromadb
+      - redis
 
   api:
     image: optisign_poc:v1
     hostname: api.ots.com
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: docker/Dockerfile
     restart: unless-stopped
     ports:
       - "8135:3000"
@@ -45,14 +59,5 @@ services:
       - ./package-lock.json:/app/package-lock.json
       - ./package.json:/app/package.json
       - ./tsconfig.json:/app/tsconfig.json
-
-  redis:
-    image: bitnami/redis:8.0.2
-    hostname: redis.ots.com
-    restart: unless-stopped
-    ports:
-      - "6400:6379"
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
-    volumes:
-      - ./persist/redis:/bitnami/redis/data
+    depends_on:
+      - chromadb
