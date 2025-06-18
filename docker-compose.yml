@@ -6,7 +6,7 @@ services:
     hostname: chromadb.ots.com
     restart: unless-stopped
     volumes:
-      - ./persist/chromadb:/data
+      - vol_chromadb:/data
 
   redis:
     image: bitnami/redis:8.0.2
@@ -17,7 +17,7 @@ services:
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
     volumes:
-      - ./persist/redis:/bitnami/redis/data
+      - vol_redis:/bitnami/redis/data
 
   scrape:
     image: optisign_poc:v1_prod
@@ -49,3 +49,9 @@ services:
       - .env.api
     depends_on:
       - chromadb
+
+volumes:
+  vol_redis:
+    external: true
+  vol_chromadb:
+    external: true
