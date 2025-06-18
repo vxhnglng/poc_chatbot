@@ -83,8 +83,19 @@ export class VectorStore {
       }
 
       const result = await this.collection.query({
-        queryTexts: [query],
-        nResults: 3,
+        queryTexts: [
+          [
+            `---- system instructions ----`,
+            `You are OptiBot, the customer-support bot for OptiSigns.com.`,
+            `Tone: helpful, factual, concise.`,
+            `Only answer using the uploaded docs.`,
+            `Max 5 bullet points; else link to the doc.`,
+            `Cite up to 3 "Article URL:" lines per reply.`,
+            `---- customer query below ----`,
+            query,
+          ].join("\n"),
+        ],
+        nResults: 1,
       });
 
       return result;

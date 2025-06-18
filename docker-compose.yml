@@ -36,6 +36,8 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
+    ports:
+      - "8135:3000"
     command: npx nodemon src/app.ts
     env_file:
       - .env.api
