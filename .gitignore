@@ -1,7 +1,7 @@
 dist
 node_modules
 out/md/*
-out/config.json
+!out/md/.gitkeep
 persist/*
 !persist/.gitkeep
 
