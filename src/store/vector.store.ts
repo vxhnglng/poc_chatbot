@@ -8,6 +8,7 @@ export class VectorStore {
   private readonly embeddingModel = "models/embedding-001";
   private readonly collectionName = "articles";
   private readonly chromaClient = new ChromaClient(Config.get().chromadb);
+  private readonly apiKey = Config.get().gen_ai.api_key;
   private genAI!: GoogleGenAI;
   private collection!: Collection;
 
@@ -20,9 +21,9 @@ export class VectorStore {
     return VectorStore._instance;
   }
 
-  async init(apiKey: string): Promise<boolean> {
+  async init(): Promise<boolean> {
     try {
-      this.genAI = new GoogleGenAI({ apiKey });
+      this.genAI = new GoogleGenAI({ apiKey: this.apiKey });
       this.collection = await this.chromaClient.getOrCreateCollection({
         name: this.collectionName,
         embeddingFunction: {

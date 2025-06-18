@@ -45,7 +45,7 @@ const embedAndStoreArticles = async (articles: IArticleExportResponse[]) => {
 };
 
 const bootstrap = async () => {
-  await VectorStore.instance.init(Config.get().gen_ai.api_key);
+  await VectorStore.instance.init();
   nodeCron.schedule(Config.get().scrape.interval, async () => {
     const resultScrape = await scrapeArticles();
     const resultExport = await exportArticles(resultScrape.articles);

@@ -5,7 +5,7 @@ import { router } from "./router";
 
 const bootstrap = async () => {
   await VectorStore.instance
-    .init(Config.get().gen_ai.api_key)
+    .init()
     .then((result) => console.log("VectorStore initialized:", result));
 
   const app = express();
